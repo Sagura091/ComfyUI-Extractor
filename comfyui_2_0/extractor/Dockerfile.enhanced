@@ -1,0 +1,140 @@
+# Enhanced Dockerfile for Revolutionary OCR Extractor
+FROM nvidia/cuda:11.8-devel-ubuntu22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-dev \
+    build-essential \
+    pkg-config \
+    wget \
+    curl \
+    git \
+    unzip \
+    software-properties-common \
+    # OpenCV dependencies
+    libopencv-dev \
+    python3-opencv \
+    # Tesseract OCR
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    tesseract-ocr-fra \
+    tesseract-ocr-deu \
+    tesseract-ocr-spa \
+    tesseract-ocr-ita \
+    tesseract-ocr-por \
+    tesseract-ocr-rus \
+    tesseract-ocr-ara \
+    tesseract-ocr-chi-sim \
+    tesseract-ocr-chi-tra \
+    tesseract-ocr-jpn \
+    tesseract-ocr-kor \
+    libtesseract-dev \
+    # Image processing libraries
+    libpng-dev \
+    libjpeg-dev \
+    libtiff-dev \
+    libgif-dev \
+    libwebp-dev \
+    # PDF processing
+    poppler-utils \
+    # Other utilities
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    libfontconfig1 \
+    libxrender1 \
+    libgl1-mesa-glx \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install additional language packs for Tesseract
+RUN apt-get update && apt-get install -y \
+    tesseract-ocr-hin \
+    tesseract-ocr-ben \
+    tesseract-ocr-tel \
+    tesseract-ocr-tam \
+    tesseract-ocr-guj \
+    tesseract-ocr-kan \
+    tesseract-ocr-mal \
+    tesseract-ocr-mar \
+    tesseract-ocr-nep \
+    tesseract-ocr-ori \
+    tesseract-ocr-pan \
+    tesseract-ocr-sin \
+    tesseract-ocr-urd \
+    tesseract-ocr-tha \
+    tesseract-ocr-vie \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up Python environment
+RUN python3 -m pip install --upgrade pip setuptools wheel
+
+# Create working directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install PyTorch with CUDA support (if not already in requirements)
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# Install additional OCR and ML libraries
+RUN pip install --no-cache-dir \
+    paddlepaddle-gpu \
+    opencv-python-headless \
+    scikit-image \
+    matplotlib \
+    seaborn \
+    jupyter \
+    notebook
+
+# Download and cache PaddleOCR models
+RUN python3 -c "from paddleocr import PaddleOCR; ocr = PaddleOCR(use_angle_cls=True, lang='en')"
+
+# Download and cache EasyOCR models  
+RUN python3 -c "import easyocr; reader = easyocr.Reader(['en'])"
+
+# Download and cache Transformers models for handwriting recognition
+RUN python3 -c "from transformers import TrOCRProcessor, VisionEncoderDecoderModel; processor = TrOCRProcessor.from_pretrained('microsoft/trocr-base-handwritten'); model = VisionEncoderDecoderModel.from_pretrained('microsoft/trocr-base-handwritten')"
+
+# Copy application code
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p /mnt/raw /mnt/extract /app/logs
+
+# Set permissions
+RUN chmod +x /app/*.py
+
+# Create non-root user for security
+RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app /mnt
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Expose port
+EXPOSE 8000
+
+# Set environment variables for the application
+ENV OCR_USE_GPU=true
+ENV OCR_CONFIDENCE_THRESHOLD=0.7
+ENV OCR_LANGUAGES=en,zh,ja,fr,de,es,it,pt,ru,ar,hi
+ENV OCR_ENABLE_TABLES=true
+ENV OCR_ENABLE_FORMULAS=true
+ENV OCR_ENABLE_HANDWRITING=true
+ENV OCR_LOG_LEVEL=INFO
+
+# Run the application
+CMD ["python3", "main.py"]

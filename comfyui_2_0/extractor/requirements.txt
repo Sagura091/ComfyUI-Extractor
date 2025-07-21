@@ -1,0 +1,35 @@
+fastapi==0.110.1
+uvicorn==0.29.0
+pdfplumber==0.11.0
+python-pptx==0.6.23
+openpyxl==3.1.2
+markdown-it-py==3.0.0
+pymupdf==1.24.4
+Pillow==10.3.0
+pytesseract==0.3.10
+sentence-transformers==2.6.1
+chromadb==0.4.24
+python-multipart
+requests
+tqdm
+pandas>=1.5.0
+
+# Revolutionary OCR Dependencies
+paddleocr>=2.7.0
+easyocr>=1.7.0
+opencv-python>=4.8.0
+transformers>=4.30.0
+torch>=2.0.0
+torchvision>=0.15.0
+numpy>=1.21.0
+sympy>=1.12
+scikit-image>=0.20.0
+
+# Enhanced processing dependencies
+markdown>=3.4.0  # For comprehensive markdown processing
+lxml>=4.9.0      # For XML/HTML parsing in PPTX/XLSX
+beautifulsoup4>=4.12.0  # For HTML content parsing
+
+# Optional GPU acceleration
+# tensorrt  # Uncomment for NVIDIA TensorRT optimization
+# onnxruntime-gpu  # Uncomment for ONNX GPU acceleration

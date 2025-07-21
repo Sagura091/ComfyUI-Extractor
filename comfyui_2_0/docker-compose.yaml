@@ -1,0 +1,63 @@
+version: "3.9"
+
+networks: { ai-net: {} }
+
+volumes:
+  ebs-data: { external: true }   # mount an EBS or local folder
+
+services:
+# ───────────────────────── 1  Apache Tika ─────────────────────────
+  tika:
+    image: apache/tika:2.9.1-full
+    command: /tika-server -c /tika-config.xml -p 9998
+    networks: [ai-net]
+    volumes:
+      - ./tika-config.xml:/tika-config.xml:ro
+      - ebs-data:/mnt                       # raw docs & extract live here
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9998"]
+      interval: 30s
+      retries: 3
+
+# ───────────────────────── 2  BLIP‑2 captioner ────────────────────
+  caption:
+    build: ./caption
+    networks: [ai-net]
+    runtime: nvidia
+    environment:
+      - MODEL=blip2-flan-t5-xl   # or: blip2-opt-2.7b
+    volumes:
+      - ebs-data:/mnt
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 60s
+      retries: 3
+
+# ───────────────────────── 3  Chroma vector store ─────────────────
+  chroma:
+    image: chromadb/chroma:latest
+    networks: [ai-net]
+    volumes:
+      - ebs-data:/mnt/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+    ports: ["8000:8000"]
+    restart: unless-stopped
+
+# ───────────────────────── 4  Extractor API ───────────────────────
+  extractor:
+    build: ./extractor
+    networks: [ai-net]
+    environment:
+      - TIKA_URL=http://tika:9998
+      - CAPTION_SERVER=http://caption:5000
+      - CHROMA_HOST=chroma
+      - CHROMA_PORT=8000
+      - EMBED_MODEL=all-MiniLM-L6-v2
+    volumes:
+      - ebs-data:/mnt
+    ports: ["8001:8000"]  # 8001 external → 8000 internal FastAPI
+    restart: unless-stopped
+    depends_on: [tika, caption, chroma]

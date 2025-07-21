@@ -1,0 +1,8 @@
+<properties>
+  <!-- Extract every embedded object (slides, XLS drawings, inline images) -->
+  <parseRecursiveEmbedded>true</parseRecursiveEmbedded>
+  <!-- Pull inline JPEGs from PDFs, not just external objects -->
+  <pdf:extractInlineImages>true</pdf:extractInlineImages>
+  <!-- Keep image quality -->
+  <pdfOcrStrategy>no_ocr</pdfOcrStrategy>
+</properties>

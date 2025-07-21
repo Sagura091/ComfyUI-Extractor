@@ -19,9 +19,13 @@ from .settings import (
     EMBED_MODEL,
 )
 from .pdf_utils import process_pdf
+from .enhanced_pdf_utils import process_pdf as process_pdf_enhanced
 from .pptx_utils import process_pptx
+from .enhanced_pptx_utils import process_pptx as process_pptx_enhanced
 from .xlsx_utils import process_xlsx
+from .enhanced_xlsx_utils import process_xlsx as process_xlsx_enhanced
 from .md_utils import process_md
+from .enhanced_md_utils import process_md as process_md_enhanced
 
 # ──────────────────────────────────────────────────────────────────────────────
 app = FastAPI()
@@ -47,16 +51,21 @@ def push_record(doc_id: str, part_id: str, caption: str, img_path: pathlib.Path,
 
 # ─────────────────────────── processors dispatcher ───────────────────────────
 def process_single(path: pathlib.Path) -> None:
+    """Process a single file with enhanced capabilities"""
     ext = path.suffix.lower()
     try:
         if ext == ".pdf":
-            process_pdf(path, push_record)
+            # Use enhanced PDF processing with revolutionary OCR
+            process_pdf_enhanced(path, push_record)
         elif ext == ".pptx":
-            process_pptx(path, push_record)
+            # Use enhanced PPTX processing with revolutionary OCR
+            process_pptx_enhanced(path, push_record)
         elif ext in {".xlsx", ".xlsm"}:
-            process_xlsx(path, push_record)
+            # Use enhanced XLSX processing with revolutionary OCR
+            process_xlsx_enhanced(path, push_record)
         elif ext == ".md":
-            process_md(path, push_record)
+            # Use enhanced Markdown processing with revolutionary OCR
+            process_md_enhanced(path, push_record)
         else:
             print(f"[SKIP] Unsupported file '{path.name}'")
     except Exception:
