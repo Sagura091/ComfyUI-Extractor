@@ -1,0 +1,17 @@
+version: "3.9"
+networks: { ai-net: {} }
+
+services:
+  comfyui:
+    image: zhangp365/comfyui:latest
+    container_name: comfyui
+    restart: unless-stopped
+    runtime: nvidia
+    environment:
+      - COMFYUI_ARGS=--listen 0.0.0.0 --gpu-only
+      - AUTO_UPDATE=true
+    networks: [ai-net]
+    ports: ["8188:8188"]
+    volumes:
+      - /ebs/comfy_root:/root
+      - /ebs/datasets:/data/my_dataset:ro      # LoRA training data
